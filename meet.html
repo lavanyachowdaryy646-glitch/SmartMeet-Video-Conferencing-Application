@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartMeet Video Conference</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #101827;
+    color: white;
+}
+
+header {
+    background: #17243a;
+    padding: 20px;
+    text-align: center;
+}
+
+header h1 {
+    color: #55d6be;
+    margin-bottom: 8px;
+}
+
+header p {
+    color: #bbb;
+    font-size: 13px;
+}
+
+.container {
+    max-width: 950px;
+    margin: auto;
+    padding: 15px;
+}
+
+.card {
+    background: #1c2940;
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+}
+
+h2, h3 {
+    margin-bottom: 15px;
+    color: #55d6be;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 13px;
+    margin: 8px 0;
+    background: #080e18;
+    color: white;
+    border: 1px solid #52627d;
+    border-radius: 7px;
+    font-size: 14px;
+}
+
+textarea {
+    min-height: 100px;
+    font-family: monospace;
+    resize: vertical;
+}
+
+button {
+    padding: 12px;
+    border: none;
+    border-radius: 7px;
+    background: #55d6be;
+    color: #101827;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 4px;
+}
+
+button:hover {
+    opacity: .85;
+}
+
+.danger {
+    background: #e85d75;
+    color: white;
+}
+
+.secondary {
+    background: #52627d;
+    color: white;
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+video {
+    width: 100%;
+    height: 200px;
+    background: black;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.video-label {
+    margin: 8px 0;
+    color: #bbb;
+    font-size: 13px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.status {
+    color: #f5cf75;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.chat-box {
+    background: #080e18;
+    padding: 12px;
+    min-height: 130px;
+    max-height: 220px;
+    overflow-y: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow-wrap: anywhere;
+}
+
+.message {
+    padding: 8px;
+    margin-bottom: 7px;
+    background: #293c59;
+    border-radius: 7px;
+}
+
+.whiteboard {
+    width: 100%;
+    height: 260px;
+    background: white;
+    border-radius: 8px;
+    touch-action: none;
+}
+
+.note {
+    color: #bbb;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 10px 0;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+    font-size: 12px;
+}
+
+@media(max-width:500px) {
+    .video-grid {
+        grid-template-columns: 1fr;
+    }
+
+    video {
+        height: 220px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎥 SmartMeet</h1>
+    <p>Online Video Conferencing Application</p>
+</header>
+
+<div class="container">
+
+<!-- MEETING -->
+<div class="card">
+
+<h2>📞 Meeting Room</h2>
+
+<input id="username"
+placeholder="Enter your name">
+
+<button onclick="startCamera()">
+📷 Start Camera
+</button>
+
+<p class="status" id="status">
+Waiting to start meeting...
+</p>
+
+</div>
+
+<!-- VIDEO -->
+<div class="card">
+
+<h2>👥 Video Conference</h2>
+
+<div class="video-grid">
+
+<div>
+    <video id="localVideo" autoplay muted playsinline></video>
+    <p class="video-label">My Camera</p>
+</div>
+
+<div>
+    <video id="remoteVideo" autoplay playsinline></video>
+    <p class="video-label">Other Participant</p>
+</div>
+
+</div>
+
+<div class="controls">
+
+<button onclick="toggleCamera()">
+📷 Camera
+</button>
+
+<button onclick="toggleMic()">
+🎤 Microphone
+</button>
+
+<button onclick="shareScreen()">
+🖥️ Share Screen
+</button>
+
+<button class="danger" onclick="leaveMeeting()">
+❌ Leave Meeting
+</button>
+
+</div>
+
+</div>
+
+<!-- CONNECTION -->
+<div class="card">
+
+<h2>🔗 Connect Two Users</h2>
+
+<p class="note">
+Both users must open this page over HTTPS.
+First user creates an offer and sends it to the second user.
+Second user creates an answer and sends it back.
+</p>
+
+<button onclick="createOffer()">
+Create Meeting
+</button>
+
+<button onclick="createAnswer()">
+Join Meeting
+</button>
+
+<label>Copy your connection details:</label>
+
+<textarea id="localSDP"
+placeholder="Your offer or answer appears here..."
+readonly></textarea>
+
+<button onclick="copySDP()">
+📋 Copy Details
+</button>
+
+<label>Paste the other person's connection details:</label>
+
+<textarea id="remoteSDP"
+placeholder="Paste offer or answer here..."></textarea>
+
+<button onclick="applyRemote()">
+Connect
+</button>
+
+</div>
+
+<!-- CHAT -->
+<div class="card">
+
+<h2>💬 Meeting Chat</h2>
+
+<div class="chat-box" id="chatBox">
+<div class="message">Welcome to SmartMeet!</div>
+</div>
+
+<input id="chatInput"
+placeholder="Type your message...">
+
+<button onclick="sendMessage()">
+Send Message
+</button>
+
+</div>
+
+<!-- WHITEBOARD -->
+<div class="card">
+
+<h2>📝 Collaborative Whiteboard</h2>
+
+<p class="note">
+Draw using your finger. Once connected, drawings are shared with the other participant.
+</p>
+
+<canvas id="board" class="whiteboard"></canvas>
+
+<button onclick="clearBoard()">
+Clear Board
+</button>
+
+</div>
+
+</div>
+
+<footer>
+SmartMeet | Slash Mark Internship Project
+</footer>
+
+<script>
+
+let localStream = null;
+let peer = null;
+let dataChannel = null;
+let cameraEnabled = true;
+let micEnabled = true;
+let screenStream = null;
+
+const localVideo =
+document.getElementById("localVideo");
+
+const remoteVideo =
+document.getElementById("remoteVideo");
+
+const statusText =
+document.getElementById("status");
+
+const localSDP =
+document.getElementById("localSDP");
+
+const remoteSDP =
+document.getElementById("remoteSDP");
+
+function status(message) {
+    statusText.textContent = message;
+}
+
+// START CAMERA
+async function startCamera() {
+
+    try {
+
+        localStream =
+        await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+
+        localVideo.srcObject = localStream;
+
+        cameraEnabled = true;
+        micEnabled = true;
+
+        status("Camera and microphone started!");
+
+    } catch(error) {
+
+        alert("Camera error: " + error.message);
+
+        status("Camera permission required.");
+
+    }
+
+}
+
+// CREATE PEER CONNECTION
+function createPeer() {
+
+    if (peer) return peer;
+
+    peer = new RTCPeerConnection({
+        iceServers: [
+            {
+                urls: "stun:stun.l.google.com:19302"
+            }
+        ]
+    });
+
+    if (localStream) {
+
+        localStream.getTracks().forEach(track => {
+            peer.addTrack(track, localStream);
+        });
+
+    }
+
+    peer.ontrack = event => {
+
+        remoteVideo.srcObject = event.streams[0];
+
+        status("Connected! Video received.");
+
+    };
+
+    peer.onconnectionstatechange = () => {
+
+        status("Connection: " + peer.connectionState);
+
+    };
+
+    peer.ondatachannel = event => {
+
+        setupDataChannel(event.channel);
+
+    };
+
+    return peer;
+
+}
+
+// CREATE OFFER
+async function createOffer() {
+
+    try {
+
+        if (!localStream) {
+            await startCamera();
+        }
+
+        if (!localStream) return;
+
+        const connection = createPeer();
+
+        dataChannel =
+        connection.createDataChannel("smartmeet");
+
+        setupDataChannel(dataChannel);
+
+        const offer =
+        await connection.createOffer();
+
+        await connection.setLocalDescription(offer);
+
+        await waitForICE(connection);
+
+        localSDP.value =
+        JSON.stringify(connection.localDescription);
+
+        status("Meeting offer created! Copy and send it.");
+
+    } catch(error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+// CREATE ANSWER
+async function createAnswer() {
+
+    try {
+
+        if (!localStream) {
+            await startCamera();
+        }
+
+        if (!localStream) return;
+
+        const connection = createPeer();
+
+        const offer =
+        JSON.parse(remoteSDP.value);
+
+        await connection.setRemoteDescription(offer);
+
+        const answer =
+        await connection.createAnswer();
+
+        await connection.setLocalDescription(answer);
+
+        await waitForICE(connection);
+
+        localSDP.value =
+        JSON.stringify(connection.localDescription);
+
+        status("Answer created! Send it to the first user.");
+
+    } catch(error) {
+
+        alert("Invalid offer: " + error.message);
+
+    }
+
+}
+
+// APPLY REMOTE ANSWER
+async function applyRemote() {
+
+    try {
+
+        const connection = createPeer();
+
+        const description =
+        JSON.parse(remoteSDP.value);
+
+        await connection.setRemoteDescription(description);
+
+        status("Connection details applied successfully!");
+
+    } catch(error) {
+
+        alert("Connection error: " + error.message);
+
+    }
+
+}
+
+// WAIT FOR ICE
+function waitForICE(connection) {
+
+    return new Promise(resolve => {
+
+        if (connection.iceGatheringState === "complete") {
+            resolve();
+            return;
+        }
+
+        function checkICE() {
+
+            if (connection.iceGatheringState === "complete") {
+
+                connection.removeEventListener(
+                    "icegatheringstatechange",
+                    checkICE
+                );
+
+                resolve();
+
+            }
+
+        }
+
+        connection.addEventListener(
+            "icegatheringstatechange",
+            checkICE
+        );
+
+        setTimeout(resolve, 15000);
+
+    });
+
+}
+
+// DATA CHANNEL
+function setupDataChannel(channel) {
+
+    dataChannel = channel;
+
+    dataChannel.onopen = () => {
+        status("Chat and data connection ready!");
+    };
+
+    dataChannel.onmessage = event => {
+
+        try {
+
+            const data = JSON.parse(event.data);
+
+            if (data.type === "chat") {
+                addMessage(data.name, data.text);
+            }
+
+            if (data.type === "draw") {
+                drawRemote(data);
+            }
+
+            if (data.type === "clear") {
+                clearCanvas();
+            }
+
+        } catch(error) {
+
+            console.error(error);
+
+        }
+
+    };
+
+}
+
+// SEND CHAT
+function sendMessage() {
+
+    const input =
+    document.getElementById("chatInput");
+
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    const name =
+    document.getElementById("username").value.trim()
+    || "Participant";
+
+    addMessage("You", message);
+
+    if (dataChannel &&
+        dataChannel.readyState === "open") {
+
+        dataChannel.send(JSON.stringify({
+            type: "chat",
+            name: name,
+            text: message
+        }));
+
+    } else {
+
+        alert("Connect with another participant first.");
+
+    }
+
+    input.value = "";
+
+}
+
+// DISPLAY MESSAGE
+function addMessage(name, text) {
+
+    const box =
+    document.getElementById("chatBox");
+
+    const div = document.createElement("div");
+
+    div.className = "message";
+
+    div.textContent = name + ": " + text;
+
+    box.appendChild(div);
+
+    box.scrollTop = box.scrollHeight;
+
+}
+
+// CAMERA CONTROL
+function toggleCamera() {
+
+    if (!localStream) {
+        alert("Start camera first.");
+        return;
+    }
+
+    cameraEnabled = !cameraEnabled;
+
+    localStream.getVideoTracks().forEach(track => {
+        track.enabled = cameraEnabled;
+    });
+
+    status(cameraEnabled ? "Camera ON" : "Camera OFF");
+
+}
+
+// MICROPHONE CONTROL
+function toggleMic() {
+
+    if (!localStream) {
+        alert("Start camera first.");
+        return;
+    }
+
+    micEnabled = !micEnabled;
+
+    localStream.getAudioTracks().forEach(track => {
+        track.enabled = micEnabled;
+    });
+
+    status(micEnabled ? "Microphone ON" : "Microphone OFF");
+
+}
+
+// SCREEN SHARING
+async function shareScreen() {
+
+    try {
+
+        if (!peer) {
+            alert("Connect to a participant first.");
+            return;
+        }
+
+        screenStream =
+        await navigator.mediaDevices.getDisplayMedia({
+            video: true
+        });
+
+        const screenTrack =
+        screenStream.getVideoTracks()[0];
+
+        const sender =
+        peer.getSenders().find(s =>
+            s.track && s.track.kind === "video"
+        );
+
+        if (!sender) {
+            alert("Camera track not available.");
+            screenStream.getTracks().forEach(t => t.stop());
+            return;
+        }
+
+        await sender.replaceTrack(screenTrack);
+
+        localVideo.srcObject = screenStream;
+
+        screenTrack.onended = async () => {
+
+            const cameraTrack =
+            localStream.getVideoTracks()[0];
+
+            await sender.replaceTrack(cameraTrack);
+
+            localVideo.srcObject = localStream;
+
+            status("Screen sharing stopped.");
+
+        };
+
+        status("Screen sharing started!");
+
+    } catch(error) {
+
+        alert("Screen sharing unavailable: " + error.message);
+
+    }
+
+}
+
+// WHITEBOARD
+const canvas =
+document.getElementById("board");
+
+const ctx = canvas.getContext("2d");
+
+let drawing = false;
+
+function resizeCanvas() {
+
+    const rect = canvas.getBoundingClientRect();
+
+    const image = canvas.toDataURL();
+
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+
+    ctx.setTransform(
+        devicePixelRatio, 0,
+        0, devicePixelRatio,
+        0, 0
+    );
+
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#17243a";
+
+    const img = new Image();
+
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+    };
+
+    img.src = image;
+
+}
+
+resizeCanvas();
+
+window.addEventListener("resize", resizeCanvas);
+
+function getPosition(event) {
+
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+
+}
+
+canvas.addEventListener("pointerdown", event => {
+
+    drawing = true;
+
+    const p = getPosition(event);
+
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+
+    canvas.setPointerCapture(event.pointerId);
+
+});
+
+canvas.addEventListener("pointermove", event => {
+
+    if (!drawing) return;
+
+    const p = getPosition(event);
+
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    if (dataChannel &&
+        dataChannel.readyState === "open") {
+
+        const rect = canvas.getBoundingClientRect();
+
+        dataChannel.send(JSON.stringify({
+            type: "draw",
+            x: p.x / rect.width,
+            y: p.y / rect.height
+        }));
+
+    }
+
+});
+
+canvas.addEventListener("pointerup", () => {
+    drawing = false;
+});
+
+canvas.addEventListener("pointercancel", () => {
+    drawing = false;
+});
+
+// REMOTE DRAWING
+function drawRemote(data) {
+
+    const rect = canvas.getBoundingClientRect();
+
+    const x = data.x * rect.width;
+    const y = data.y * rect.height;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+}
+
+// CLEAR BOARD
+function clearCanvas() {
+
+    ctx.clearRect(
+        0, 0,
+        canvas.width,
+        canvas.height
+    );
+
+}
+
+function clearBoard() {
+
+    clearCanvas();
+
+    if (dataChannel &&
+        dataChannel.readyState === "open") {
+
+        dataChannel.send(JSON.stringify({
+            type: "clear"
+        }));
+
+    }
+
+}
+
+// COPY CONNECTION DETAILS
+async function copySDP() {
+
+    try {
+
+        await navigator.clipboard.writeText(
+            localSDP.value
+        );
+
+        alert("Connection details copied!");
+
+    } catch(error) {
+
+        localSDP.select();
+
+        document.execCommand("copy");
+
+        alert("Copy your connection details.");
+
+    }
+
+}
+
+// LEAVE MEETING
+function leaveMeeting() {
+
+    if (peer) {
+        peer.close();
+        peer = null;
+    }
+
+    if (localStream) {
+
+        localStream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        localStream = null;
+
+    }
+
+    if (screenStream) {
+
+        screenStream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        screenStream = null;
+
+    }
+
+    if (dataChannel) {
+        dataChannel.close();
+        dataChannel = null;
+    }
+
+    localVideo.srcObject = null;
+    remoteVideo.srcObject = null;
+
+    status("You left the meeting.");
+
+}
+
+</script>
+
+</body>
+</html>
